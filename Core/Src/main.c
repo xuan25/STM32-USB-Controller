@@ -23,15 +23,37 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "usbd_customhid.h"
+#include "usbd_custom_hid_if.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
+typedef struct Key {
+  GPIO_TypeDef* GPIOx;
+  uint16_t GPIO_Pin;
+  uint8_t State;
+  uint32_t LastLevelChangedMs;
+  uint8_t LastChangedLevel;
+  void (*OnPressed)();
+  void (*OnReleased)();
+} Key;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+#define LED_ON  GPIO_PIN_RESET
+#define LED_OFF GPIO_PIN_SET
+
+#define KEY_PRESSED  GPIO_PIN_RESET
+#define KEY_RELEASED GPIO_PIN_SET
+
+#define NUM_KEYS 2u
+#define KEY_DE_JITTERING_MS 10u
 
 /* USER CODE END PD */
 
@@ -44,6 +66,9 @@
 
 /* USER CODE BEGIN PV */
 
+uint16_t ctrlState;
+Key keys[2];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -51,10 +76,117 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 /* USER CODE BEGIN PFP */
 
+void LED_On(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+void LED_Off(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+void UpdateStateLED();
+void Key_Scan(uint16_t keyID);
+void Key_ScanAll();
+void OnKey0Pressed();
+void OnKey0Released();
+void OnKey1Pressed();
+void OnKey1Released();
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+uint16_t ctrlState = 0;
+
+Key keys[NUM_KEYS] = {
+  {
+    .GPIOx = KEY_0_GPIO_Port,
+    .GPIO_Pin = KEY_0_Pin,
+    .State = KEY_RELEASED,
+    .OnPressed = OnKey0Pressed,
+    .OnReleased = OnKey0Released,
+  },
+  {
+    .GPIOx = KEY_1_GPIO_Port,
+    .GPIO_Pin = KEY_1_Pin,
+    .State = KEY_RELEASED,
+    .OnPressed = OnKey1Pressed,
+    .OnReleased = OnKey1Released,
+  },
+};
+
+void LED_On(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin) {
+  HAL_GPIO_WritePin(GPIOx, GPIO_Pin, LED_ON);
+}
+
+void LED_Off(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin) {
+  HAL_GPIO_WritePin(GPIOx, GPIO_Pin, LED_OFF);
+}
+
+void UpdateStateLED() {
+  if (ctrlState != 0) {
+    LED_On(LED_2_GPIO_Port, LED_2_Pin);
+  }
+  else {
+    LED_Off(LED_2_GPIO_Port, LED_2_Pin);
+  }
+}
+
+void Key_Scan(uint16_t keyID) {
+  if (HAL_GPIO_ReadPin(keys[keyID].GPIOx, keys[keyID].GPIO_Pin) == KEY_PRESSED) {
+    // Pressed level
+    uint32_t tickMs = HAL_GetTick();
+    // Level update
+    if(keys[keyID].LastChangedLevel == KEY_RELEASED) {
+      keys[keyID].LastChangedLevel = KEY_PRESSED;
+      keys[keyID].LastLevelChangedMs = tickMs;
+    }
+    // State update
+    if(keys[keyID].State == KEY_RELEASED && tickMs - keys[keyID].LastLevelChangedMs > KEY_DE_JITTERING_MS) {
+      keys[keyID].State = KEY_PRESSED;
+      (*keys[keyID].OnPressed)();
+    }
+  }
+  else {
+    // Released level
+    uint32_t tickMs = HAL_GetTick();
+    // Level update
+    if(keys[keyID].LastChangedLevel == KEY_PRESSED) {
+      keys[keyID].LastChangedLevel = KEY_RELEASED;
+      keys[keyID].LastLevelChangedMs = tickMs;
+    }
+    // State update
+    if(keys[keyID].State == KEY_PRESSED && tickMs - keys[keyID].LastLevelChangedMs > KEY_DE_JITTERING_MS) {
+      keys[keyID].State = KEY_RELEASED;
+      (*keys[keyID].OnReleased)();
+    }
+  }
+}
+
+void Key_ScanAll() {
+  for (int i=0; i<NUM_KEYS; i++) {
+    Key_Scan(i);
+  }
+}
+
+void OnKey0Pressed(){
+  ctrlState = ctrlState | CTRL_PLAY_PAUSE;
+  USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+  UpdateStateLED();
+}
+
+void OnKey0Released(){
+  ctrlState = ctrlState & ~CTRL_PLAY_PAUSE;
+  USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+  UpdateStateLED();
+}
+
+void OnKey1Pressed(){
+  ctrlState = ctrlState | CTRL_NEXT;
+  USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+  UpdateStateLED();
+}
+
+void OnKey1Released(){
+  ctrlState = ctrlState & ~CTRL_NEXT;
+  USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+  UpdateStateLED();
+}
 
 /* USER CODE END 0 */
 
@@ -98,6 +230,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+    Key_ScanAll();
 
   }
   /* USER CODE END 3 */
