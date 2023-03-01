@@ -26,6 +26,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include  "usbd_ioreq.h"
+#include  "usbd_composite.h"
 
 /** @addtogroup STM32_USB_DEVICE_LIBRARY
   * @{
@@ -35,7 +36,6 @@ extern "C" {
   * @brief This file is the Header file for USBD_customhid.c
   * @{
   */
-
 
 /** @defgroup USBD_CUSTOM_HID_Exported_Defines
   * @{

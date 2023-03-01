@@ -30,6 +30,7 @@
 #define __USB_MIDI_H
 
 #include  "usbd_ioreq.h"
+#include  "usbd_composite.h"
 
 #define MIDI_IN_PORTS_NUM 1
 #define MIDI_OUT_PORTS_NUM 1
@@ -40,11 +41,16 @@
 
 /** @defgroup USBD_MIDI_Exported_Defines
   * @{
-  */ 
+  */
+
+#ifndef MIDI_EPIN_ADDR
 #define MIDI_EPIN_ADDR                 0x81
+#endif /* MIDI_EPIN_ADDR */
 #define MIDI_EPIN_SIZE                 0x40
 
+#ifndef MIDI_EPOUT_ADDR
 #define MIDI_EPOUT_ADDR                0x01
+#endif /* MIDI_EPOUT_ADDR */
 #define MIDI_EPOUT_SIZE                0x40
 
 #define USB_MIDI_CLASS_DESC_SHIFT      18
