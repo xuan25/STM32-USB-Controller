@@ -137,50 +137,6 @@ static int8_t MIDI_OutEvent_FS(uint8_t event_idx, uint8_t state);
 
 /* Private functions ---------------------------------------------------------*/
 
-/**
-  * @brief  Initializes the CUSTOM HID media low layer
-  * @retval USBD_OK if all operations are OK else USBD_FAIL
-  */
-static int8_t MIDI_Init_FS(void)
-{
-  /* USER CODE BEGIN 4 */
-  return (USBD_OK);
-  /* USER CODE END 4 */
-}
-
-/**
-  * @brief  DeInitializes the CUSTOM HID media low layer
-  * @retval USBD_OK if all operations are OK else USBD_FAIL
-  */
-static int8_t MIDI_DeInit_FS(void)
-{
-  /* USER CODE BEGIN 5 */
-  return (USBD_OK);
-  /* USER CODE END 5 */
-}
-
-/**
-  * @brief  Manage the CUSTOM HID class events
-  * @param  event_idx: Event index
-  * @param  state: Event state
-  * @retval USBD_OK if all operations are OK else USBD_FAIL
-  */
-static int8_t MIDI_OutEvent_FS(uint8_t event_idx, uint8_t state)
-{
-  /* USER CODE BEGIN 6 */
-  UNUSED(event_idx);
-  UNUSED(state);
-
-  /* Start next USB packet transfer once data processing is completed */
-  if (USBD_MIDI_ReceivePacket(&hUsbDeviceFS) != (uint8_t)USBD_OK)
-  {
-    return -1;
-  }
-
-  return (USBD_OK);
-  /* USER CODE END 6 */
-}
-
 /* USER CODE BEGIN 7 */
 /**
   * @brief  Send the report to the Host

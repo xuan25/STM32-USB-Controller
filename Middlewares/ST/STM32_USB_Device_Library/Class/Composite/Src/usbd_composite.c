@@ -58,9 +58,9 @@ static uint8_t  USBD_COMPOSITE_DeInit (USBD_HandleTypeDef *pdev,
 static uint8_t  USBD_COMPOSITE_Setup (USBD_HandleTypeDef *pdev, 
 									USBD_SetupReqTypedef *req);
 
-static const uint8_t  *USBD_COMPOSITE_GetCfgDesc (uint16_t *length);
+static uint8_t  *USBD_COMPOSITE_GetCfgDesc (uint16_t *length);
 
-static const uint8_t  *USBD_COMPOSITE_GetDeviceQualifierDesc (uint16_t *length);
+static uint8_t  *USBD_COMPOSITE_GetDeviceQualifierDesc (uint16_t *length);
 
 static uint8_t  USBD_COMPOSITE_DataIn (USBD_HandleTypeDef *pdev, uint8_t epnum);
 
@@ -94,14 +94,14 @@ USBD_ClassTypeDef  USBD_COMPOSITE_ClassDriver =
 	USBD_COMPOSITE_GetDeviceQualifierDesc,
 };
 
+#define USB_COMPOSITE_CONFIG_DESC_SIZ       (9 + (USB_CUSTOM_HID_CONFIG_DESC_SIZ - 9) + (USB_MIDI_CONFIG_DESC_SIZE - 9))
+
 #if defined ( __ICCARM__ ) /*!< IAR Compiler */
 #pragma data_alignment=4
 #endif
 
-#define USB_COMPOSITE_CONFIG_DESC_SIZ       (9 + (USB_CUSTOM_HID_CONFIG_DESC_SIZ - 9) + (USB_MIDI_CONFIG_DESC_SIZE - 9))
-
-/* USB MSC+CDC device Configuration Descriptor */
-static const uint8_t USBD_COMPOSITE_CfgDesc[USB_COMPOSITE_CONFIG_DESC_SIZ] =
+/* USB HID+MIDI device Configuration Descriptor */
+__ALIGN_BEGIN uint8_t USBD_COMPOSITE_CfgDesc[USB_COMPOSITE_CONFIG_DESC_SIZ] __ALIGN_END =
 {
 	0x09,         /* bLength: Configuation Descriptor size */
 	USB_DESC_TYPE_CONFIGURATION, /* bDescriptorType: Configuration */
@@ -451,11 +451,8 @@ static const uint8_t USBD_COMPOSITE_CfgDesc[USB_COMPOSITE_CONFIG_DESC_SIZ] =
 
 #define USB_MAX_PACKET_SIZE 0x40
 
-#if defined ( __ICCARM__ ) /*!< IAR Compiler */
-#pragma data_alignment=4
-#endif
 /* USB Standard Device Descriptor */
-static uint8_t USBD_COMPOSITE_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC] =
+__ALIGN_BEGIN uint8_t USBD_COMPOSITE_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC] __ALIGN_END =
 {
 	USB_LEN_DEV_QUALIFIER_DESC,
 	USB_DESC_TYPE_DEVICE_QUALIFIER,
@@ -576,7 +573,7 @@ static uint8_t  USBD_COMPOSITE_DataOut (USBD_HandleTypeDef *pdev,
   * @param  length : pointer data length
   * @retval pointer to descriptor buffer
   */
-static const uint8_t  *USBD_COMPOSITE_GetCfgDesc (uint16_t *length)
+static uint8_t  *USBD_COMPOSITE_GetCfgDesc (uint16_t *length)
 {
 	*length = sizeof (USBD_COMPOSITE_CfgDesc);
 	return USBD_COMPOSITE_CfgDesc;
@@ -588,7 +585,7 @@ static const uint8_t  *USBD_COMPOSITE_GetCfgDesc (uint16_t *length)
 * @param  length : pointer data length
 * @retval pointer to descriptor buffer
 */
-const uint8_t *USBD_COMPOSITE_DeviceQualifierDescriptor (uint16_t *length)
+static uint8_t *USBD_COMPOSITE_DeviceQualifierDescriptor (uint16_t *length)
 {
 	*length = sizeof (USBD_COMPOSITE_DeviceQualifierDesc);
 	return USBD_COMPOSITE_DeviceQualifierDesc;
@@ -612,7 +609,7 @@ static uint8_t  USBD_COMPOSITE_EP0_RxReady (USBD_HandleTypeDef *pdev)
 * @param  length : pointer data length
 * @retval pointer to descriptor buffer
 */
-const uint8_t  *USBD_COMPOSITE_GetDeviceQualifierDesc (uint16_t *length)
+static uint8_t  *USBD_COMPOSITE_GetDeviceQualifierDesc (uint16_t *length)
 {
 	*length = sizeof (USBD_COMPOSITE_DeviceQualifierDesc);
 	return USBD_COMPOSITE_DeviceQualifierDesc;

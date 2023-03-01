@@ -105,7 +105,7 @@
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 
-uint8_t USBD_MIDI_SendCCReport_FS(uint16_t ctrl);
+uint8_t USBD_MIDI_SendCCMessage_FS(uint8_t cable_number, uint8_t channel_number, uint8_t controller_number, uint8_t new_value);
 
 /* USER CODE END EXPORTED_FUNCTIONS */
 
