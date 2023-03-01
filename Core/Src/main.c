@@ -25,6 +25,8 @@
 
 #include "usbd_customhid.h"
 #include "usbd_custom_hid_if.h"
+#include "usbd_composite.h"
+#include "usbd_composite_if.h"
 
 /* USER CODE END Includes */
 
@@ -166,25 +168,25 @@ void Key_ScanAll() {
 
 void OnKey0Pressed(){
   ctrlState = ctrlState | CTRL_PLAY_PAUSE;
-  USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+  USBD_COMPOSITE_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
   UpdateStateLED();
 }
 
 void OnKey0Released(){
   ctrlState = ctrlState & ~CTRL_PLAY_PAUSE;
-  USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+  USBD_COMPOSITE_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
   UpdateStateLED();
 }
 
 void OnKey1Pressed(){
   ctrlState = ctrlState | CTRL_NEXT;
-  USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+  USBD_COMPOSITE_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
   UpdateStateLED();
 }
 
 void OnKey1Released(){
   ctrlState = ctrlState & ~CTRL_NEXT;
-  USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+  USBD_COMPOSITE_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
   UpdateStateLED();
 }
 

@@ -24,6 +24,8 @@
 #define COMPOSITE_MIDI_EPOUT_ADDR         COMPOSITE_MIDI_EP_IDX
 #define COMPOSITE_MIDI_EPIN_ADDR          COMPOSITE_MIDI_EP_IDX | INEP_DIR_MASK
 
+uint8_t USBD_COMPOSITE_CUSTOM_HID_SendReport(USBD_HandleTypeDef *pdev, uint8_t *report, uint16_t len);
+
 /** @addtogroup STM32_USB_DEVICE_LIBRARY
   * @{
   */

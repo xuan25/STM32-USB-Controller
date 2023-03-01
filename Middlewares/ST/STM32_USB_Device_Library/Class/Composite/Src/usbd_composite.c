@@ -619,6 +619,40 @@ const uint8_t  *USBD_COMPOSITE_GetDeviceQualifierDesc (uint16_t *length)
 }
 
 /**
+  * @brief  USBD_CUSTOM_HID_SendReport
+  *         Send CUSTOM_HID Report
+  * @param  pdev: device instance
+  * @param  buff: pointer to report
+  * @retval status
+  */
+uint8_t USBD_COMPOSITE_CUSTOM_HID_SendReport(USBD_HandleTypeDef *pdev,
+                                   uint8_t *report, uint16_t len)
+{
+  USBD_CUSTOM_HID_HandleTypeDef *hhid;
+
+  if (pdev->pClassDataCmsit[pdev->classId] == NULL)
+  {
+    return (uint8_t)USBD_FAIL;
+  }
+
+  hhid = (USBD_CUSTOM_HID_HandleTypeDef *)pdev->pClassDataCmsit[pdev->classId];
+
+  if (pdev->dev_state == USBD_STATE_CONFIGURED)
+  {
+    if (hhid->state == CUSTOM_HID_IDLE)
+    {
+      hhid->state = CUSTOM_HID_BUSY;
+      (void)USBD_LL_Transmit(pdev, COMPOSITE_CUSTOM_HID_EPIN_ADDR, report, len);
+    }
+    else
+    {
+      return (uint8_t)USBD_BUSY;
+    }
+  }
+  return (uint8_t)USBD_OK;
+}
+
+/**
   * @}
   */
 
