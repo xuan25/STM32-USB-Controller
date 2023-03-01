@@ -28,6 +28,8 @@
 
 /* USER CODE BEGIN Includes */
 
+#include "usbd_composite.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -625,7 +627,7 @@ USBD_StatusTypeDef USBD_LL_SetTestMode(USBD_HandleTypeDef *pdev, uint8_t testmod
   */
 void *USBD_static_malloc(uint32_t size)
 {
-  static uint32_t mem[(sizeof(USBD_CUSTOM_HID_HandleTypeDef)/4+1)];/* On 32-bit boundary */
+  static uint32_t mem[(MAX_CLASS_DATA_SIZE/4+1)];/* On 32-bit boundary */
   return mem;
 }
 

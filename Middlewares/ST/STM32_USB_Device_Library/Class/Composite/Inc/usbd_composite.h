@@ -10,6 +10,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include  "usbd_ioreq.h"
 
+#define MAX_CLASS_DATA_SIZE   sizeof(USBD_CUSTOM_HID_HandleTypeDef)
+
 #define INEP_DIR_MASK   0x80
 
 #define COMPOSITE_CUSTOM_HID_INTERFACE_IDX    0x0
