@@ -32,6 +32,12 @@
 #define MIDI_EPIN_ADDR          COMPOSITE_MIDI_EPIN_ADDR
 #define MIDI_EPOUT_ADDR         COMPOSITE_MIDI_EPOUT_ADDR
 
+// override endpoint size
+#define  CUSTOM_HID_EPIN_SIZE     0x40
+#define  CUSTOM_HID_EPOUT_SIZE    0x40
+#define  MIDI_EPIN_SIZE           0x40
+#define  MIDI_EPOUT_SIZE          0x40
+
 uint8_t USBD_COMPOSITE_CUSTOM_HID_SendReport(USBD_HandleTypeDef *pdev, uint8_t *report, uint16_t len);
 
 /** @addtogroup STM32_USB_DEVICE_LIBRARY

@@ -46,12 +46,18 @@
 #ifndef MIDI_EPIN_ADDR
 #define MIDI_EPIN_ADDR                 0x81
 #endif /* MIDI_EPIN_ADDR */
+
+#ifndef MIDI_EPIN_SIZE
 #define MIDI_EPIN_SIZE                 0x40
+#endif /* MIDI_EPIN_SIZE */
 
 #ifndef MIDI_EPOUT_ADDR
 #define MIDI_EPOUT_ADDR                0x01
 #endif /* MIDI_EPOUT_ADDR */
+
+#ifndef MIDI_EPOUT_SIZE
 #define MIDI_EPOUT_SIZE                0x40
+#endif /* MIDI_EPOUT_SIZE */
 
 #define USB_MIDI_CLASS_DESC_SHIFT      18
 #define USB_MIDI_DESC_SIZE             7
