@@ -27,6 +27,8 @@
 #include "usbd_custom_hid_if.h"
 
 /* USER CODE BEGIN Includes */
+#include "usbd_midi.h"
+#include "usbd_composite.h"
 
 /* USER CODE END Includes */
 
@@ -64,7 +66,7 @@ USBD_HandleTypeDef hUsbDeviceFS;
 void MX_USB_DEVICE_Init(void)
 {
   /* USER CODE BEGIN USB_DEVICE_Init_PreTreatment */
-
+  #if 0
   /* USER CODE END USB_DEVICE_Init_PreTreatment */
 
   /* Init Device Library, add supported class and start the library. */
@@ -86,6 +88,24 @@ void MX_USB_DEVICE_Init(void)
   }
 
   /* USER CODE BEGIN USB_DEVICE_Init_PostTreatment */
+  # endif
+
+  if (USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS) != USBD_OK)
+  {
+    Error_Handler();
+  }
+  if (USBD_RegisterClass(&hUsbDeviceFS, &USBD_COMPOSITE_ClassDriver) != USBD_OK)
+  {
+    Error_Handler();
+  }
+  if (USBD_CUSTOM_HID_RegisterInterface(&hUsbDeviceFS, &USBD_CustomHID_fops_FS) != USBD_OK)
+  {
+    Error_Handler();
+  }
+  if (USBD_Start(&hUsbDeviceFS) != USBD_OK)
+  {
+    Error_Handler();
+  }
 
   /* USER CODE END USB_DEVICE_Init_PostTreatment */
 }

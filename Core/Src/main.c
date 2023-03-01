@@ -23,8 +23,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "usbd_customhid.h"
 #include "usbd_custom_hid_if.h"
+#include "usbd_midi_if.h"
 
 /* USER CODE END Includes */
 
@@ -178,13 +178,15 @@ void OnKey0Released(){
 
 void OnKey1Pressed(){
   ctrlState = ctrlState | CTRL_NEXT;
-  USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+  // USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+  USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 0x7, 0xff);
   UpdateStateLED();
 }
 
 void OnKey1Released(){
   ctrlState = ctrlState & ~CTRL_NEXT;
-  USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+  // USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+  USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 0x7, 0x00);
   UpdateStateLED();
 }
 
