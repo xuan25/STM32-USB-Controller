@@ -36,8 +36,7 @@ typedef struct Key {
   uint8_t State;
   uint32_t LastLevelChangedMs;
   uint8_t LastChangedLevel;
-  void (*OnPressed)();
-  void (*OnReleased)();
+  void (*OnStateChanged)(uint8_t oldState, uint8_t newState);
 } Key;
 
 typedef struct KeyPinData {
@@ -71,7 +70,7 @@ typedef struct KeyPinData {
 /* USER CODE BEGIN PV */
 
 uint16_t ctrlState;
-Key keys[2];
+Key keys[NUM_KEYS];
 
 /* USER CODE END PV */
 
@@ -83,13 +82,11 @@ static void MX_GPIO_Init(void);
 void LED_On(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
 void LED_Off(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
 void UpdateStateLED();
-void Key_Update(uint16_t keyID, uint8_t level);
-void Key_Scan(uint16_t keyID);
+void Key_Update(Key* key, uint8_t level);
+void Key_Scan(Key* key);
 void Key_ScanAll();
-void OnKey0Pressed();
-void OnKey0Released();
-void OnKey1Pressed();
-void OnKey1Released();
+void OnKey0StateChanged(uint8_t oldState, uint8_t newState);
+void OnKey1StateChanged(uint8_t oldState, uint8_t newState);
 
 /* USER CODE END PFP */
 
@@ -105,8 +102,7 @@ Key keys[NUM_KEYS] = {
       .GPIO_Pin = KEY_0_Pin
     }),
     .State = KEY_RELEASED,
-    .OnPressed = OnKey0Pressed,
-    .OnReleased = OnKey0Released,
+    .OnStateChanged = OnKey0StateChanged,
   },
   {
     .UserData = &((KeyPinData){ 
@@ -114,8 +110,7 @@ Key keys[NUM_KEYS] = {
       .GPIO_Pin = KEY_1_Pin
     }),
     .State = KEY_RELEASED,
-    .OnPressed = OnKey1Pressed,
-    .OnReleased = OnKey1Released,
+    .OnStateChanged = OnKey1StateChanged,
   },
 };
 
@@ -136,75 +131,59 @@ void UpdateStateLED() {
   }
 }
 
-void Key_Update(uint16_t keyID, uint8_t level) {
-  if (level) {
-    // Pressed level
-    uint32_t tickMs = HAL_GetTick();
-    // Level update
-    if(keys[keyID].LastChangedLevel == KEY_RELEASED) {
-      keys[keyID].LastChangedLevel = KEY_PRESSED;
-      keys[keyID].LastLevelChangedMs = tickMs;
-    }
-    // State update
-    if(keys[keyID].State == KEY_RELEASED && tickMs - keys[keyID].LastLevelChangedMs > KEY_DE_JITTERING_MS) {
-      keys[keyID].State = KEY_PRESSED;
-      (*keys[keyID].OnPressed)();
-    }
+void Key_Update(Key* key, uint8_t level) {
+  // Pressed level
+  uint32_t tickMs = HAL_GetTick();
+  // Level update
+  if(key->LastChangedLevel != level) {
+    key->LastChangedLevel = level;
+    key->LastLevelChangedMs = tickMs;
   }
-  else {
-    // Released level
-    uint32_t tickMs = HAL_GetTick();
-    // Level update
-    if(keys[keyID].LastChangedLevel == KEY_PRESSED) {
-      keys[keyID].LastChangedLevel = KEY_RELEASED;
-      keys[keyID].LastLevelChangedMs = tickMs;
-    }
-    // State update
-    if(keys[keyID].State == KEY_PRESSED && tickMs - keys[keyID].LastLevelChangedMs > KEY_DE_JITTERING_MS) {
-      keys[keyID].State = KEY_RELEASED;
-      (*keys[keyID].OnReleased)();
-    }
+  // State update
+  if(key->State != level && tickMs - key->LastLevelChangedMs > KEY_DE_JITTERING_MS) {
+    uint8_t oldState = key->State;
+    key->State = level;
+    (*key->OnStateChanged)(oldState, level);
   }
 }
 
-void Key_Scan(uint16_t keyID) {
-  KeyPinData keyPinData = *(KeyPinData*)keys[keyID].UserData;
-  GPIO_TypeDef* GPIOx = keyPinData.GPIOx;
-  uint16_t GPIO_Pin = keyPinData.GPIO_Pin;
-  uint8_t keyLevel = HAL_GPIO_ReadPin(GPIOx, GPIO_Pin) == KEY_PRESSED;
-  Key_Update(keyID, keyLevel);
+void Key_Scan(Key* key) {
+  KeyPinData* keyPinData = (KeyPinData*)key->UserData;
+  uint8_t keyLevel = HAL_GPIO_ReadPin(keyPinData->GPIOx, keyPinData->GPIO_Pin);
+  Key_Update(key, keyLevel);
 }
 
 void Key_ScanAll() {
   for (int i=0; i<NUM_KEYS; i++) {
-    Key_Scan(i);
+    Key* key = &keys[i];
+    Key_Scan(key);
   }
 }
 
-void OnKey0Pressed(){
-  ctrlState = ctrlState | CTRL_PLAY_PAUSE;
-  USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
-  UpdateStateLED();
+void OnKey0StateChanged(uint8_t oldState, uint8_t newState) {
+  if (newState == KEY_PRESSED) {
+    ctrlState = ctrlState | CTRL_PLAY_PAUSE;
+    USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+    UpdateStateLED();
+  } else {
+    ctrlState = ctrlState & ~CTRL_PLAY_PAUSE;
+    USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+    UpdateStateLED();
+  }
 }
 
-void OnKey0Released(){
-  ctrlState = ctrlState & ~CTRL_PLAY_PAUSE;
-  USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
-  UpdateStateLED();
-}
-
-void OnKey1Pressed(){
-  ctrlState = ctrlState | CTRL_NEXT;
-  // USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
-  USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 0x7, 0xff);
-  UpdateStateLED();
-}
-
-void OnKey1Released(){
-  ctrlState = ctrlState & ~CTRL_NEXT;
-  // USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
-  USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 0x7, 0x00);
-  UpdateStateLED();
+void OnKey1StateChanged(uint8_t oldState, uint8_t newState){
+  if (newState == KEY_PRESSED) {
+    ctrlState = ctrlState | CTRL_NEXT;
+    // USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+    USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 0x7, 0xff);
+    UpdateStateLED();
+  } else {
+    ctrlState = ctrlState & ~CTRL_NEXT;
+    // USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+    USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 0x7, 0x00);
+    UpdateStateLED();
+  }
 }
 
 /* USER CODE END 0 */
