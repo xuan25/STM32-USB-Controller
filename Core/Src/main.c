@@ -23,6 +23,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "led.h"
+#include "key.h"
 #include "usbd_custom_hid_if.h"
 #include "usbd_midi_if.h"
 
@@ -31,38 +33,24 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
-typedef struct Key {
-  void (*UserData);
-  uint8_t State;
-  uint32_t LastLevelChangedMs;
-  uint8_t LastChangedLevel;
-  void (*OnStateChanged)(uint8_t oldState, uint8_t newState);
-} Key;
-
-typedef struct KeyPinData {
+typedef struct KeyData {
   GPIO_TypeDef* GPIOx;
   uint16_t GPIO_Pin;
-} KeyPinData;
-
-typedef struct LED {
-  GPIO_TypeDef* GPIOx;
-  uint16_t GPIO_Pin;
-} LED;
+  uint16_t ID;
+} KeyData;
 
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define LED_ON  GPIO_PIN_RESET
-#define LED_OFF GPIO_PIN_SET
-
 #define KEY_PRESSED  GPIO_PIN_RESET
 #define KEY_RELEASED GPIO_PIN_SET
 
-#define NUM_KEYS 2u
-#define KEY_DE_JITTERING_MS 10u
+#define LED_ON  GPIO_PIN_RESET
+#define LED_OFF GPIO_PIN_SET
 
+#define NUM_KEYS 2u
 #define NUM_LEDS 2u
 
 /* USER CODE END PD */
@@ -77,8 +65,8 @@ typedef struct LED {
 /* USER CODE BEGIN PV */
 
 uint16_t ctrlState;
-Key keys[NUM_KEYS];
-LED leds[NUM_LEDS];
+static Key keys[NUM_KEYS];
+static LED leds[NUM_LEDS];
 
 /* USER CODE END PV */
 
@@ -87,14 +75,10 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 /* USER CODE BEGIN PFP */
 
-void LED_On(LED* led);
-void LED_Off(LED* led);
 void UpdateStateLED();
-void Key_Update(Key* key, uint8_t level);
 void Key_Scan(Key* key);
 void Key_ScanAll();
-void OnKey0StateChanged(uint8_t oldState, uint8_t newState);
-void OnKey1StateChanged(uint8_t oldState, uint8_t newState);
+void OnKeyStateChanged(Key* sender, uint8_t oldState, uint8_t newState);
 
 /* USER CODE END PFP */
 
@@ -103,26 +87,28 @@ void OnKey1StateChanged(uint8_t oldState, uint8_t newState);
 
 uint16_t ctrlState = 0;
 
-Key keys[NUM_KEYS] = {
+static Key keys[NUM_KEYS] = {
   {
-    .UserData = &((KeyPinData){ 
+    .UserData = &((KeyData){ 
       .GPIOx = KEY_0_GPIO_Port,
-      .GPIO_Pin = KEY_0_Pin
+      .GPIO_Pin = KEY_0_Pin,
+      .ID = 0,
     }),
     .State = KEY_RELEASED,
-    .OnStateChanged = OnKey0StateChanged,
+    .OnStateChanged = OnKeyStateChanged,
   },
   {
-    .UserData = &((KeyPinData){ 
+    .UserData = &((KeyData){ 
       .GPIOx = KEY_1_GPIO_Port,
-      .GPIO_Pin = KEY_1_Pin
+      .GPIO_Pin = KEY_1_Pin,
+      .ID = 1,
     }),
     .State = KEY_RELEASED,
-    .OnStateChanged = OnKey1StateChanged,
+    .OnStateChanged = OnKeyStateChanged,
   },
 };
 
-LED leds[NUM_LEDS] = {
+static LED leds[NUM_LEDS] = {
   {
     .GPIOx = LED_1_GPIO_Port,
     .GPIO_Pin = LED_1_Pin
@@ -133,42 +119,18 @@ LED leds[NUM_LEDS] = {
   }
 };
 
-void LED_On(LED* led) {
-  HAL_GPIO_WritePin(led->GPIOx, led->GPIO_Pin, LED_ON);
-}
-
-void LED_Off(LED* led) {
-  HAL_GPIO_WritePin(led->GPIOx, led->GPIO_Pin, LED_OFF);
-}
-
 void UpdateStateLED() {
   if (ctrlState != 0) {
-    LED_On(&leds[1]);
+    LED_SetState(&leds[1], LED_ON);
   }
   else {
-    LED_Off(&leds[1]);
-  }
-}
-
-void Key_Update(Key* key, uint8_t level) {
-  // Pressed level
-  uint32_t tickMs = HAL_GetTick();
-  // Level update
-  if(key->LastChangedLevel != level) {
-    key->LastChangedLevel = level;
-    key->LastLevelChangedMs = tickMs;
-  }
-  // State update
-  if(key->State != level && tickMs - key->LastLevelChangedMs > KEY_DE_JITTERING_MS) {
-    uint8_t oldState = key->State;
-    key->State = level;
-    (*key->OnStateChanged)(oldState, level);
+    LED_SetState(&leds[1], LED_OFF);
   }
 }
 
 void Key_Scan(Key* key) {
-  KeyPinData* keyPinData = (KeyPinData*)key->UserData;
-  uint8_t keyLevel = HAL_GPIO_ReadPin(keyPinData->GPIOx, keyPinData->GPIO_Pin);
+  KeyData* keyData = (KeyData*)key->UserData;
+  uint8_t keyLevel = HAL_GPIO_ReadPin(keyData->GPIOx, keyData->GPIO_Pin);
   Key_Update(key, keyLevel);
 }
 
@@ -179,29 +141,36 @@ void Key_ScanAll() {
   }
 }
 
-void OnKey0StateChanged(uint8_t oldState, uint8_t newState) {
-  if (newState == KEY_PRESSED) {
-    ctrlState = ctrlState | CTRL_PLAY_PAUSE;
-    USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
-    UpdateStateLED();
-  } else {
-    ctrlState = ctrlState & ~CTRL_PLAY_PAUSE;
-    USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
-    UpdateStateLED();
-  }
-}
-
-void OnKey1StateChanged(uint8_t oldState, uint8_t newState){
-  if (newState == KEY_PRESSED) {
-    ctrlState = ctrlState | CTRL_NEXT;
-    // USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
-    USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 0x7, 0xff);
-    UpdateStateLED();
-  } else {
-    ctrlState = ctrlState & ~CTRL_NEXT;
-    // USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
-    USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 0x7, 0x00);
-    UpdateStateLED();
+void OnKeyStateChanged(Key* sender, uint8_t oldState, uint8_t newState) {
+  KeyData* keyData = (KeyData*)sender->UserData;
+  switch (keyData->ID)
+  {
+  case 0:
+    if (newState == KEY_PRESSED) {
+      ctrlState = ctrlState | CTRL_PLAY_PAUSE;
+      USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+      UpdateStateLED();
+    } else {
+      ctrlState = ctrlState & ~CTRL_PLAY_PAUSE;
+      USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+      UpdateStateLED();
+    }
+    break;
+  case 1:
+    if (newState == KEY_PRESSED) {
+      ctrlState = ctrlState | CTRL_NEXT;
+      // USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+      USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 0x7, 0xff);
+      UpdateStateLED();
+    } else {
+      ctrlState = ctrlState & ~CTRL_NEXT;
+      // USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
+      USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 0x7, 0x00);
+      UpdateStateLED();
+    }
+    break;
+  default:
+    break;
   }
 }
 
