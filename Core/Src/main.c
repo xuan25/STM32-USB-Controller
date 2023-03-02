@@ -44,6 +44,11 @@ typedef struct KeyPinData {
   uint16_t GPIO_Pin;
 } KeyPinData;
 
+typedef struct LED {
+  GPIO_TypeDef* GPIOx;
+  uint16_t GPIO_Pin;
+} LED;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -58,6 +63,8 @@ typedef struct KeyPinData {
 #define NUM_KEYS 2u
 #define KEY_DE_JITTERING_MS 10u
 
+#define NUM_LEDS 2u
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -71,6 +78,7 @@ typedef struct KeyPinData {
 
 uint16_t ctrlState;
 Key keys[NUM_KEYS];
+LED leds[NUM_LEDS];
 
 /* USER CODE END PV */
 
@@ -79,8 +87,8 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 /* USER CODE BEGIN PFP */
 
-void LED_On(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
-void LED_Off(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+void LED_On(LED* led);
+void LED_Off(LED* led);
 void UpdateStateLED();
 void Key_Update(Key* key, uint8_t level);
 void Key_Scan(Key* key);
@@ -114,20 +122,31 @@ Key keys[NUM_KEYS] = {
   },
 };
 
-void LED_On(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin) {
-  HAL_GPIO_WritePin(GPIOx, GPIO_Pin, LED_ON);
+LED leds[NUM_LEDS] = {
+  {
+    .GPIOx = LED_1_GPIO_Port,
+    .GPIO_Pin = LED_1_Pin
+  },
+  {
+    .GPIOx = LED_2_GPIO_Port,
+    .GPIO_Pin = LED_2_Pin
+  }
+};
+
+void LED_On(LED* led) {
+  HAL_GPIO_WritePin(led->GPIOx, led->GPIO_Pin, LED_ON);
 }
 
-void LED_Off(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin) {
-  HAL_GPIO_WritePin(GPIOx, GPIO_Pin, LED_OFF);
+void LED_Off(LED* led) {
+  HAL_GPIO_WritePin(led->GPIOx, led->GPIO_Pin, LED_OFF);
 }
 
 void UpdateStateLED() {
   if (ctrlState != 0) {
-    LED_On(LED_2_GPIO_Port, LED_2_Pin);
+    LED_On(&leds[1]);
   }
   else {
-    LED_Off(LED_2_GPIO_Port, LED_2_Pin);
+    LED_Off(&leds[1]);
   }
 }
 
