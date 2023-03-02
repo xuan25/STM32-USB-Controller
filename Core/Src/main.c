@@ -32,14 +32,18 @@
 /* USER CODE BEGIN PTD */
 
 typedef struct Key {
-  GPIO_TypeDef* GPIOx;
-  uint16_t GPIO_Pin;
+  void (*UserData);
   uint8_t State;
   uint32_t LastLevelChangedMs;
   uint8_t LastChangedLevel;
   void (*OnPressed)();
   void (*OnReleased)();
 } Key;
+
+typedef struct KeyPinData {
+  GPIO_TypeDef* GPIOx;
+  uint16_t GPIO_Pin;
+} KeyPinData;
 
 /* USER CODE END PTD */
 
@@ -79,6 +83,7 @@ static void MX_GPIO_Init(void);
 void LED_On(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
 void LED_Off(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
 void UpdateStateLED();
+void Key_Update(uint16_t keyID, uint8_t level);
 void Key_Scan(uint16_t keyID);
 void Key_ScanAll();
 void OnKey0Pressed();
@@ -95,15 +100,19 @@ uint16_t ctrlState = 0;
 
 Key keys[NUM_KEYS] = {
   {
-    .GPIOx = KEY_0_GPIO_Port,
-    .GPIO_Pin = KEY_0_Pin,
+    .UserData = &((KeyPinData){ 
+      .GPIOx = KEY_0_GPIO_Port,
+      .GPIO_Pin = KEY_0_Pin
+    }),
     .State = KEY_RELEASED,
     .OnPressed = OnKey0Pressed,
     .OnReleased = OnKey0Released,
   },
   {
-    .GPIOx = KEY_1_GPIO_Port,
-    .GPIO_Pin = KEY_1_Pin,
+    .UserData = &((KeyPinData){ 
+      .GPIOx = KEY_1_GPIO_Port,
+      .GPIO_Pin = KEY_1_Pin
+    }),
     .State = KEY_RELEASED,
     .OnPressed = OnKey1Pressed,
     .OnReleased = OnKey1Released,
@@ -127,8 +136,8 @@ void UpdateStateLED() {
   }
 }
 
-void Key_Scan(uint16_t keyID) {
-  if (HAL_GPIO_ReadPin(keys[keyID].GPIOx, keys[keyID].GPIO_Pin) == KEY_PRESSED) {
+void Key_Update(uint16_t keyID, uint8_t level) {
+  if (level) {
     // Pressed level
     uint32_t tickMs = HAL_GetTick();
     // Level update
@@ -156,6 +165,14 @@ void Key_Scan(uint16_t keyID) {
       (*keys[keyID].OnReleased)();
     }
   }
+}
+
+void Key_Scan(uint16_t keyID) {
+  KeyPinData keyPinData = *(KeyPinData*)keys[keyID].UserData;
+  GPIO_TypeDef* GPIOx = keyPinData.GPIOx;
+  uint16_t GPIO_Pin = keyPinData.GPIO_Pin;
+  uint8_t keyLevel = HAL_GPIO_ReadPin(GPIOx, GPIO_Pin) == KEY_PRESSED;
+  Key_Update(keyID, keyLevel);
 }
 
 void Key_ScanAll() {
