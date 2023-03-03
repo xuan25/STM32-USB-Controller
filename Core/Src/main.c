@@ -65,6 +65,8 @@ typedef struct KeyData {
 /* USER CODE BEGIN PV */
 
 uint16_t ctrlState;
+uint16_t midiState;
+
 static Key keys[NUM_KEYS];
 static LED leds[NUM_LEDS];
 
@@ -121,6 +123,12 @@ static LED leds[NUM_LEDS] = {
 
 void UpdateStateLED() {
   if (ctrlState != 0) {
+    LED_SetState(&leds[0], LED_ON);
+  }
+  else {
+    LED_SetState(&leds[0], LED_OFF);
+  }
+  if (midiState != 0) {
     LED_SetState(&leds[1], LED_ON);
   }
   else {
@@ -158,14 +166,14 @@ void OnKeyStateChanged(Key* sender, uint8_t oldState, uint8_t newState) {
     break;
   case 1:
     if (newState == KEY_PRESSED) {
-      ctrlState = ctrlState | CTRL_NEXT;
+      // ctrlState = ctrlState | CTRL_NEXT;
       // USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
-      USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 0x7, 0xff);
+      midiState = ~midiState;
+      USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 80, midiState);
       UpdateStateLED();
     } else {
-      ctrlState = ctrlState & ~CTRL_NEXT;
+      // ctrlState = ctrlState & ~CTRL_NEXT;
       // USBD_CUSTOM_HID_SendCtrlReport_FS(ctrlState);
-      USBD_MIDI_SendCCMessage_FS(0x0, 0x0, 0x7, 0x00);
       UpdateStateLED();
     }
     break;

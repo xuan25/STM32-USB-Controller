@@ -19,5 +19,6 @@ System Controller with STM32 via USB
 ## Default setup in main.c
 
 - KEY_0 (PE4): Consumer Control - Play/Pause
-- KEY_1 (PE3): MIDI CC - Track Volume
-- LED_2 (PF10): key-down indicator
+  - LED_1 (PF9): Key-pressed indicator
+- KEY_1 (PE3): MIDI CC - Toggle button (on Cable 0, Channel 1, Controller 80)
+  - LED_2 (PF10): Toggle indicator
