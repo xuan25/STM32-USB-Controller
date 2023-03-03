@@ -53,12 +53,12 @@
 #define CTRL_REPORT_ID      4u
 #define CTRL_REPORT_LENGTH  3u
 
-#define CTRL_VOLUME_INCREMENT   0x01u
-#define CTRL_VOLUME_DECREMENT   0x02u
-#define CTRL_MUTE               0x04u
-#define CTRL_PLAY_PAUSE         0x08u
-#define CTRL_NEXT               0x10u
-#define CTRL_PREVIOUS           0x20u
+#define CTRL_VOLUME_INCREMENT   1 << 0
+#define CTRL_VOLUME_DECREMENT   1 << 1
+#define CTRL_MUTE               1 << 2
+#define CTRL_PLAY_PAUSE         1 << 3
+#define CTRL_NEXT               1 << 4
+#define CTRL_PREVIOUS           1 << 5
 
 #define KEYBOARD_REPORT_ID      2u
 #define KEYBOARD_REPORT_LENGTH  9u
