@@ -88,6 +88,7 @@ void OnKeyStateChanged(Key* sender, uint8_t oldState, uint8_t newState);
 /* USER CODE BEGIN 0 */
 
 uint16_t ctrlState = 0;
+uint16_t midiState = 0;
 
 static Key keys[NUM_KEYS] = {
   {
